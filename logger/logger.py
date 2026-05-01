@@ -22,6 +22,6 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 if __name__=="__main__":
-    logger.info("Start programm")
+    logger.info("Start program")
     logger.info("Finish")
 
