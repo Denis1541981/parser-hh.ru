@@ -5,13 +5,16 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from aiogram import Bot, Dispatcher
 from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.types import (KeyboardButton, Message,
-                           ReplyKeyboardMarkup)
+                           ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton)
+from aiogram import F
+from aiogram.types import CallbackQuery
+from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv, find_dotenv
 
 from app import *
-from settings.setting import USER_DB
+from settings.setting import USER_DB, DB_PATH
 
 load_dotenv(find_dotenv('.env'))
 TOKEN = os.getenv("TOKEN")
@@ -26,7 +29,7 @@ session = AiohttpSession(proxy=PROXY_URL)
 bot = Bot(token=TOKEN, session=session)
 
 dp = Dispatcher()
-
+db = SqliteDB()
 # Инициализация SQLite
 def init_db():
     with sqlite3.connect(USER_DB, check_same_thread=False) as conn:
@@ -45,7 +48,7 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="/help"), KeyboardButton(text="/subscribe")],
-            [KeyboardButton(text="/unsubscribe"), KeyboardButton(text="/latest")],
+            [KeyboardButton(text="/unsubscribe"), KeyboardButton(text="/filter")],
         ],
         resize_keyboard=True
     )
@@ -71,7 +74,8 @@ async def process_help_command(message: Message):
         '/start - запустить бота\n'
         '/help - список команд\n'
         '/subscribe - подписаться на рассылку\n'
-        '/unsubscribe - отписаться от рассылки\n',
+        '/unsubscribe - отписаться от рассылки\n'
+        '/filter - некоторая статистика с сайта\n',
         reply_markup=get_main_keyboard()
     )
 
@@ -120,6 +124,97 @@ async def unsubscribe_user(message: Message):
         logger.info(f"[-] User {user_id} unsubscribed from vacancies")
     else:
         await message.answer("Вы не были подписаны на рассылку.")
+
+
+@dp.message(Command("filter"))
+async def filters(message: Message):
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="💰 Топ по зарплате", callback_data="top_salary"),
+                InlineKeyboardButton(text="🏢 Топ компании", callback_data="top_company"),
+            ],
+            [
+                InlineKeyboardButton(text="📊 Топ вакансии", callback_data="top_vacancy"),
+            ],
+            [
+                InlineKeyboardButton(text="🔎 Поиск по должности", callback_data="search_vacancy")
+            ]
+        ]
+    )
+
+    await message.answer("Выбери фильтр:", reply_markup=keyboard)
+
+
+@dp.callback_query(F.data == "top_salary")
+async def top_salary(callback: CallbackQuery):
+    result = db.get_top_salary()
+
+    if not result:
+        await callback.message.answer("Нет данных по зарплатам")
+        await callback.answer()
+        return
+
+    text = "💰 Топ 5 вакансий по зарплате:\n\n"
+
+    for i, row in enumerate(result, start=1):
+        title, employer, salary = row
+        text += f"{i}. {title}\n🏢 {employer}\n💵 {salary}\n\n"
+
+    await callback.message.answer(text)
+    await callback.answer()
+
+
+
+@dp.callback_query(F.data == "top_company")
+async def top_company(callback: CallbackQuery):
+    result = db.get_top_company()
+    text = "🏢 Топ компаний по количеству вакансий:\n\n"
+    for i, (employer, count) in enumerate(result, start=1):
+        text += f"{i}. {employer} — {count} вакансий\n"
+    await callback.message.answer(text)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "top_vacancy")
+async def top_vacancy(callback: CallbackQuery):
+    result = db.get_top_vacancy()
+
+    text = "📊 Топ вакансий (спрос + зарплата):\n\n"
+
+    for i, (title, count, avg_salary) in enumerate(result, start=1):
+        text += f"{i}. {title}\n📈 {count} шт | 💰 {int(avg_salary)}\n\n"
+
+    await callback.message.answer(text)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "search_vacancy")
+async def search_vacancy(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите название вакансии (например: водитель):")
+    await state.set_state("waiting_for_vacancy")
+    await callback.answer()
+
+
+@dp.message(F.text, StateFilter("waiting_for_vacancy"))
+async def process_search(message: Message, state: FSMContext):
+    query = message.text
+
+    result = db.search_vacancy(query)
+
+    if not result:
+        await message.answer("Ничего не найдено 😢")
+        await state.clear()
+        return
+
+    text = f"🔎 Результаты по запросу: {query}\n\n"
+
+    for i, (title, employer, salary) in enumerate(result, start=1):
+        text += f"{i}. {title}\n🏢 {employer}\n💵 {salary}\n\n"
+
+    await message.answer(text)
+    await state.clear()
+
 
 def get_new_vacancies():
     vacancies = get_parse(get_request(), max_page=0)
@@ -172,7 +267,7 @@ async def check_new_vacancies():
 
 
 async def main():
-    db = SqliteDB()
+    
     task = asyncio.create_task(check_new_vacancies())
     try:
         logger.info("Starting bot...")

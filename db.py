@@ -58,7 +58,53 @@ class SqliteDB:
         with self.db as conn:
             rows = conn.execute("SELECT id_vacancies FROM vacancies").fetchall()
             return {row[0] for row in rows}
+        
+    def get_top_salary(self):
+        with self.db as conn:
+            result = conn.execute("""
+                SELECT title, employer, salary
+                FROM vacancies
+                WHERE salary IS NOT NULL
+                ORDER BY salary DESC
+                LIMIT 5
+            """).fetchall()
+            return result
+        
+    def get_top_company(self):
+        with self.db as conn:
+            result = conn.execute("""
+                SELECT employer, COUNT(*) as cnt
+                FROM vacancies
+                GROUP BY employer
+                ORDER BY cnt DESC
+                LIMIT 5
+            """).fetchall()
+        return result
 
+
+    def get_top_vacancy(self):
+        with self.db as conn:
+            result = conn.execute("""
+                SELECT title, COUNT(*) as cnt, AVG(salary) as avg_salary
+                FROM vacancies
+                WHERE salary > 0
+                GROUP BY title
+                ORDER BY cnt DESC, avg_salary DESC
+                LIMIT 5
+            """).fetchall()
+        return result
+
+    def search_vacancy(self, query, limit=5):
+        with self.db as conn:
+            result = conn.execute("""
+                SELECT title, employer, salary
+                FROM vacancies
+                WHERE title LIKE ?
+                ORDER BY salary DESC
+                LIMIT ?
+            """, (f"%{query}%", limit)).fetchall()
+        return result
+    
 
     def close(self):
         self.db.close()
