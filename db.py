@@ -99,7 +99,7 @@ class SqliteDB:
             result = conn.execute("""
                 SELECT title, employer, salary
                 FROM vacancies
-                WHERE title LIKE ?
+                WHERE LOWER(title) LIKE LOWER(?)
                 ORDER BY salary DESC
                 LIMIT ?
             """, (f"%{query}%", limit)).fetchall()
