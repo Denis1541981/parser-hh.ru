@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 import os
 import sqlite3
 from datetime import datetime
@@ -269,17 +270,20 @@ async def check_new_vacancies():
 
 
 async def main():
-    
     task = asyncio.create_task(check_new_vacancies())
+
     try:
         logger.info("Starting bot...")
         await dp.start_polling(bot)
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
+
     finally:
         task.cancel()
-        await session.close()
+
+        with suppress(asyncio.CancelledError):
+            await task
+
         db.close()
+        logger.info("Bot stopped")
 
 
 
