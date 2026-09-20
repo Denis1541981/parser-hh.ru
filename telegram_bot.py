@@ -24,9 +24,11 @@ if not TOKEN:
 db.create_db()
 PROXY_URL = os.getenv("PROXY_URL")
 
-
-
-bot = Bot(token=TOKEN)
+if PROXY_URL:
+    session = AiohttpSession(proxy=PROXY_URL)
+    bot = Bot(token=TOKEN, session=session)
+else:
+    bot = Bot(token=TOKEN)
 
 dp = Dispatcher()
 db = SqliteDB()
