@@ -25,8 +25,8 @@ db.create_db()
 PROXY_URL = os.getenv("PROXY_URL")
 
 
-session = AiohttpSession(proxy=PROXY_URL)
-bot = Bot(token=TOKEN, session=session)
+
+bot = Bot(token=TOKEN)
 
 dp = Dispatcher()
 db = SqliteDB()

@@ -50,14 +50,14 @@ def get_page(s):
     return int(page[0]) if page else 0
 
 
-def get_parse(html, all_vacancies=None, max_page=2):
+def get_parse(html, all_vacancies=None, max_page=2): # type: ignore
     if all_vacancies is None:
         all_vacancies = []
     existing_ids = db.get_all_ids()
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "lxml") # type: ignore
     for el in soup.find_all("div", class_="magritte-redesign"):
-        title = el.find("span", attrs={"data-qa": "serp-item__title-text"}).text.strip()
-        salary = convert_solary(el.find("span", class_="magritte-text___pbpft_5-0-1 magritte-text_style-primary___AQ7MW_5-0-1 magritte-text_typography-label-1-regular___pi3R-_5-0-1").text.replace("\u202f", "").replace("\xa0", " ").replace('₽', '').strip() if el.find("span", class_="magritte-text___pbpft_5-0-1 magritte-text_style-primary___AQ7MW_5-0-1 magritte-text_typography-label-1-regular___pi3R-_5-0-1") else "Нет оклада")
+        title = el.find("span", attrs={"data-qa": "serp-item__title-text"}).text.strip() # type: ignore
+        salary = convert_solary(el.find("span", class_="magritte-text___pbpft_5-3-12_xhh magritte-text_style-primary___AQ7MW_5-3-12_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-12_xhh").text.replace("\u202f", "").replace("\xa0", " ").replace('₽', '').strip() if el.find("span", class_="magritte-text___pbpft_5-3-12_xhh magritte-text_style-primary___AQ7MW_5-3-12_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-12_xhh") else "Нет оклада")
         employer = el.find("span", attrs={"data-qa": "vacancy-serp__vacancy-employer-text"}).text.replace("\xa0", " ").strip()
         employer_address = el.find("span", attrs={"data-qa": "vacancy-serp__vacancy-address"}).text.strip()
         description = el.find("div", attrs={"data-qa": "vacancy-serp__vacancy_snippet_responsibility"}).text.strip() if el.find("div", attrs={"data-qa": "vacancy-serp__vacancy_snippet_responsibility"}) else "Нет описания"

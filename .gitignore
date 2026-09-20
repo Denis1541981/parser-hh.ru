@@ -63,3 +63,4 @@ htmlcov/
 # =========================
 .DS_Store
 Thumbs.db
+html.html
