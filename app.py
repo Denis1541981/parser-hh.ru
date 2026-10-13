@@ -57,12 +57,7 @@ def get_parse(html, all_vacancies=None, max_page=2): # type: ignore
     soup = BeautifulSoup(html, "lxml") # type: ignore
     for el in soup.find_all("div", class_="magritte-redesign"):
         title = el.find("span", attrs={"data-qa": "serp-item__title-text"}).text.strip() # type: ignore
-<<<<<<< HEAD
         salary = convert_solary(el.find("span", class_="magritte-text___pbpft_5-3-13_xhh magritte-text_style-primary___AQ7MW_5-3-13_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-13_xhh").text.replace("\u202f", "").replace("\xa0", " ").replace('₽', '').strip() if el.find("span", class_="magritte-text___pbpft_5-3-13_xhh magritte-text_style-primary___AQ7MW_5-3-13_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-13_xhh") else "Нет оклада")
-        print(salary)
-=======
-        salary = convert_solary(el.find("span", class_="magritte-text___pbpft_5-3-13_xhh magritte-text_style-primary___AQ7MW_5-3-13_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-13_xhh").text.replace("\u202f", "").replace("\xa0", " ").replace('₽', '').strip() if el.find("span", class_="magritte-text___pbpft_5-3-12_xhh magritte-text_style-primary___AQ7MW_5-3-12_xhh magritte-text_typography-label-1-regular___pi3R-_5-3-12_xhh") else "Нет оклада")
->>>>>>> 0396817 (Update app.py)
         employer = el.find("span", attrs={"data-qa": "vacancy-serp__vacancy-employer-text"}).text.replace("\xa0", " ").strip()
         employer_address = el.find("span", attrs={"data-qa": "vacancy-serp__vacancy-address"}).text.strip()
         description = el.find("div", attrs={"data-qa": "vacancy-serp__vacancy_snippet_responsibility"}).text.strip() if el.find("div", attrs={"data-qa": "vacancy-serp__vacancy_snippet_responsibility"}) else "Нет описания"
